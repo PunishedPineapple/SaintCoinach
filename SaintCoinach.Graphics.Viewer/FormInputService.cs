@@ -14,10 +14,13 @@ namespace SaintCoinach.Graphics.Viewer {
         #region Fields
         private List<Keys> _DownKeys = new List<Keys>();
         private Point _MousePosition;
+        private int _MouseWheelDelta;
         private List<MouseButtons> _DownMouseButtons = new List<MouseButtons>();
+        private System.Diagnostics.Stopwatch _TimeSinceLastScrollEvent = new System.Diagnostics.Stopwatch();
         #endregion
 
         public Point MousePosition { get { return _MousePosition; } }
+        public int MouseWheelDelta { get { lock( _TimeSinceLastScrollEvent ) return _TimeSinceLastScrollEvent.ElapsedMilliseconds > 100L ? 0 : _MouseWheelDelta; } }
 
         #region Constructor
         public FormInputService(Form form) {
@@ -26,6 +29,7 @@ namespace SaintCoinach.Graphics.Viewer {
             form.MouseMove += Form_MouseMove;
             form.MouseDown += Form_MouseDown;
             form.MouseUp += Form_MouseUp;
+            form.MouseWheel += Form_MouseWheel;
             form.LostFocus += Form_LostFocus;
         }
         #endregion
@@ -61,6 +65,13 @@ namespace SaintCoinach.Graphics.Viewer {
             lock (_DownMouseButtons) {
                 if (!_DownMouseButtons.Contains(e.Button))
                     _DownMouseButtons.Add(e.Button);
+            }
+        }
+
+        void Form_MouseWheel( object sender, MouseEventArgs e ) {
+            lock(_TimeSinceLastScrollEvent) {
+                _MouseWheelDelta = e.Delta;
+                _TimeSinceLastScrollEvent.Restart();
             }
         }
 

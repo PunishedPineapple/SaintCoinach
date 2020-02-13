@@ -19,6 +19,10 @@ namespace SaintCoinach.Graphics.Viewer {
                 get { return SharpDX.Point.Zero; }
             }
 
+            public int MouseWheelDelta {
+                get { return 0; }
+            }
+
             public IEnumerable<System.Windows.Forms.Keys> GetDownKeys() {
                 yield break;
             }

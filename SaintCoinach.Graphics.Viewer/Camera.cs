@@ -13,18 +13,23 @@ namespace SaintCoinach.Graphics.Viewer {
         #region Fields
         private Vector3 _CameraPosition = Vector3.UnitX;
         private Vector3 _Up = Vector3.Up;
+        private Vector3 _OrthoLookAt = Vector3.Zero;
 
         private float _Yaw = 0;
         private float _Pitch = 0;
         private Matrix _Projection;
         private Matrix _View;
         private float _FoV = 0.9f;
-        private float _Speed = 1.0f;
+        private float _OrthoScale = 1.0f;
+        private bool _OrthoMode = false;
+        private bool _OKeyWasDown = false;
 
         const float RotationSpeed = (float)(Math.PI / 2f);
         const float MoveSpeed = 20.0f;
         const float MouseRotationSpeedYaw = RotationSpeed / 500f;
         const float MouseRotationSpeedPitch = RotationSpeed / 300f;
+        const float MouseOrthoPanSpeed = 0.85f;
+        const float MouseOrthoZoomSpeed = 0.1f;
 
         private Engine _Engine;
 
@@ -39,6 +44,10 @@ namespace SaintCoinach.Graphics.Viewer {
             get { return _CameraPosition; }
             set { _CameraPosition = value; }
         }
+        public Vector3 OrthoLookAt {
+            get { return _OrthoLookAt; }
+            set { _OrthoLookAt = value; }
+        }
         public float Yaw {
             get { return _Yaw; }
             set { _Yaw = value; }
@@ -50,6 +59,18 @@ namespace SaintCoinach.Graphics.Viewer {
         public float FoV {
             get { return _FoV; }
             set { _FoV = value; }
+        }
+        public float OrthoScale {
+            get { return _OrthoScale; }
+            set { _OrthoScale = value; }
+        }
+        public bool OrthoMode {
+            get { return _OrthoMode; }
+            set { _OrthoMode = value; }
+        }
+        public bool OKeyWasDown {
+            get { return _OKeyWasDown; }
+            set { _OKeyWasDown = value; }
         }
         #endregion
 
@@ -67,6 +88,9 @@ namespace SaintCoinach.Graphics.Viewer {
             _Yaw = 0;
             _Pitch = 0;
 
+            _OrthoLookAt = Vector3.Zero;
+            OrthoScale = 1.0f;
+
             UpdateViewMatrix();
         }
         public Matrix GetRotation() {
@@ -82,7 +106,15 @@ namespace SaintCoinach.Graphics.Viewer {
             Vector3 cameraOriginalUpVector = new Vector3(0, 1, 0);
             Vector3 cameraRotatedUpVector = (Vector3)Vector3.Transform(cameraOriginalUpVector, rotation);
 
-            _View = Matrix.LookAtRH(_CameraPosition, cameraFinalTarget, cameraRotatedUpVector);
+            if( OrthoMode ) {
+                Vector3 orthoCamera = _OrthoLookAt;
+                Vector3 orthoCameraUp = new Vector3( 0, 0, -1 ); ;
+                orthoCamera.Y += 10;    //***** TODO: Need to make this adjustable because not everything is at zero dumbass. *****
+                _View = Matrix.LookAtRH( orthoCamera, _OrthoLookAt, orthoCameraUp );
+            }
+            else{
+                _View = Matrix.LookAtRH( _CameraPosition, cameraFinalTarget, cameraRotatedUpVector );
+            }
         }
         public void AddToCameraPosition(Vector3 vectorToAdd) {
             var rotation = GetRotation();
@@ -119,20 +151,22 @@ namespace SaintCoinach.Graphics.Viewer {
             Vector3 moveVector = new Vector3(0, 0, 0);
             var aspectRatio = (float)(_Engine.ViewportSize.Width / (float)_Engine.ViewportSize.Height);
 
-            if (_Engine.IsActive) {
-                var modFactor = _Speed;
-
-
-                if (_Engine.Keyboard.IsKeyDown(Keys.OemCloseBrackets)) {
-                    _Speed -= 1f;
-                    _Speed = _Speed < 0f ? 2f : _Speed;
+                //  Toggle orthogonal mode if we want.
+                if( _Engine.IsActive )
+                {
+                if( _Engine.Keyboard.IsKeyDown( Keys.O ) ) {
+                    if( !OKeyWasDown ) OrthoMode = !OrthoMode;
+                    OKeyWasDown = true;
                 }
-                if (_Engine.Keyboard.IsKeyDown(Keys.OemOpenBrackets)) {
-                    _Speed += 1f;
+                else {
+                    OKeyWasDown = false;
+                }
                 }
 
+                if (_Engine.IsActive) {
+                var modFactor = 2f;
                 if (_Engine.Keyboard.IsKeyDown(Keys.Space))
-                    modFactor *= 2f;
+                    modFactor *= 10f;
                 if (_Engine.Keyboard.IsKeyDown(Keys.ShiftKey))
                     amount *= modFactor;
                 if (_Engine.Keyboard.IsKeyDown(Keys.ControlKey))
@@ -153,6 +187,21 @@ namespace SaintCoinach.Graphics.Viewer {
                 if (_Engine.Keyboard.IsKeyDown(Keys.R))
                     Reset();
 
+                if( OrthoMode ) {
+                    if( _Engine.Keyboard.IsKeyDown( Keys.Q ) )
+                        OrthoScale *= 1.0f + 0.01f * amount;
+                    if( _Engine.Keyboard.IsKeyDown( Keys.Z ) )
+                        OrthoScale *= 1.0f - 0.01f * amount;
+                    if( _Engine.Keyboard.IsKeyDown( Keys.W ) )
+                        _OrthoLookAt.Z -= amount * 10.0f;
+                    if( _Engine.Keyboard.IsKeyDown( Keys.S ) )
+                        _OrthoLookAt.Z += amount * 10.0f;
+                    if( _Engine.Keyboard.IsKeyDown( Keys.D ) )
+                        _OrthoLookAt.X += amount * 10.0f;
+                    if( _Engine.Keyboard.IsKeyDown( Keys.A ) )
+                        _OrthoLookAt.X -= amount * 10.0f;
+                }
+
                 if (_Engine.Keyboard.IsKeyDown(Keys.Left))
                     _Yaw += RotationSpeed * amount * 2;
                 if (_Engine.Keyboard.IsKeyDown(Keys.Right))
@@ -169,6 +218,17 @@ namespace SaintCoinach.Graphics.Viewer {
                     var mouseMove = _CurrentMouseState.AbsolutePosition - _PreviousMouseState.AbsolutePosition;
                     _Yaw -= mouseMove.X * MouseRotationSpeedYaw;
                     _Pitch -= mouseMove.Y * MouseRotationSpeedPitch;
+
+                    if( OrthoMode ){
+                        _OrthoLookAt.X -= mouseMove.X * MouseOrthoPanSpeed * OrthoScale;
+                        _OrthoLookAt.Z -= mouseMove.Y * MouseOrthoPanSpeed * OrthoScale;
+                    }
+                }
+
+                float scrollAmount = (float)System.Math.Sign( _CurrentMouseState.MouseWheelDelta );
+
+                if( OrthoMode ) {
+                    OrthoScale *= 1.0f - ( 0.1f * scrollAmount * MouseOrthoZoomSpeed );
                 }
 
                 AddToCameraPosition(moveVector * amount);
@@ -176,7 +236,14 @@ namespace SaintCoinach.Graphics.Viewer {
 
             UpdateViewMatrix();
 
-            _Projection = Matrix.PerspectiveFovRH(FoV, aspectRatio, 0.1f, 10000.0f);
+            float orthoAspectRatio = (float)_Engine.ViewportSize.Width / (float)_Engine.ViewportSize.Height;
+
+            if( OrthoMode ) {
+                _Projection = Matrix.OrthoRH( OrthoScale * 1000.0f * orthoAspectRatio, OrthoScale * 1000.0f, 0.1f, 100000.0f );
+            }
+            else {
+                _Projection = Matrix.PerspectiveFovRH( FoV, aspectRatio, 0.1f, 10000.0f );
+            }
         }
     }
 }

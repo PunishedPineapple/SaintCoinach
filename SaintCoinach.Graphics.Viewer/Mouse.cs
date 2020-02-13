@@ -40,6 +40,7 @@ namespace SaintCoinach.Graphics.Viewer {
             var pos = _Engine.InputService.MousePosition;
             _CurrentState.AbsolutePosition = new Vector2(pos.X, pos.Y);
             _CurrentState.RelativePosition = new Vector2(_CurrentState.AbsolutePosition.X / (float)_Engine.ViewportSize.Width, _CurrentState.AbsolutePosition.Y / (float)_Engine.ViewportSize.Height);
+            _CurrentState.MouseWheelDelta = (float)_Engine.InputService.MouseWheelDelta;
             _CurrentState.LeftButton = buttons.Contains(System.Windows.Forms.MouseButtons.Left);
             _CurrentState.RightButton = buttons.Contains(System.Windows.Forms.MouseButtons.Right);
             _CurrentState.MiddleButton = buttons.Contains(System.Windows.Forms.MouseButtons.Middle);

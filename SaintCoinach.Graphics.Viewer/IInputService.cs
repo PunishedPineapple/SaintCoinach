@@ -11,6 +11,7 @@ namespace SaintCoinach.Graphics.Viewer {
 
     public interface IInputService {
         Point MousePosition { get; }
+        int MouseWheelDelta { get; }
         IEnumerable<Keys> GetDownKeys();
         IEnumerable<MouseButtons> GetDownMouseButtons();
     }

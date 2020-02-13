@@ -12,6 +12,9 @@ namespace SaintCoinach.Graphics.Viewer {
         public bool RightButton { get; internal set; }
         public bool MiddleButton { get; internal set; }
 
+        public float MouseWheelDelta { get; internal set; }
+        public TimeSpan TimeSinceLastWheel { get; internal set; }
+
         public Vector2 AbsolutePosition { get; internal set; }
         public Vector2 RelativePosition { get; internal set; }
     }

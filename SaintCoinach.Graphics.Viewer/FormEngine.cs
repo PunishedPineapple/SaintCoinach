@@ -211,6 +211,7 @@ namespace SaintCoinach.Graphics.Viewer {
                 ResizeToClient();
             }
 
+            _Form.Text = Camera.OrthoLookAt.X.ToString() + ", " + Camera.OrthoLookAt.Z.ToString();
             base.Update(time);
         }
     }
